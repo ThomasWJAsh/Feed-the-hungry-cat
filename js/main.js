@@ -1,10 +1,30 @@
 const canvas = document.querySelector('#canvas');
 const ctx = canvas.getContext("2d");
 
-let x = canvas.width / 2;
-let y = canvas.height - 30;
-let dx = 2;
+const catx = canvas.width / 2;
+const caty = canvas.height / 2;
+const mouthRadius = 50;
+const ballRadius = 10;
+
+function startPosition() {
+
+    if (Math.floor(Math.random()*10) <=0.5){
+        return Math.floor(Math.random() * (catx - (mouthRadius+ballRadius) - ballRadius*2) + ballRadius*2)
+    }
+    else { 
+        return Math.floor(Math.random() * (canvas.width - ballRadius*2 - (catx+mouthRadius+ballRadius)) + (catx+mouthRadius+ballRadius))
+    }
+}
+
+
+
+let x = startPosition();
+let y = ballRadius;
+let dx = 0;
 let dy = -2;
+let speed = 1.0;
+
+
 
 const paddleHeight = 10;
 const paddleWidth = 75;
@@ -12,7 +32,6 @@ let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
 
-const ballRadius = 10;
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
@@ -49,12 +68,30 @@ function drawPaddle() {
     ctx.closePath();
   }
 
+function drawCatMouth() {
+    ctx.beginPath();
+    ctx.arc(catx, caty, mouthRadius, 0, Math.PI * 2);
+    ctx.fillStyle = "#0095DD";
+    ctx.fill();
+    ctx.closePath();
+  }
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBall();
     drawPaddle();
+    drawCatMouth();
     x += dx;
     y += dy;
+    //make the food disappear when it hits the mouth
+    if (x > (catx - mouthRadius)  && x < (catx + mouthRadius) && y < (caty + mouthRadius) && y > (caty - mouthRadius)) {
+        x = startPosition();
+        y = 20; 
+        speed += 0.001;
+        dx = 0;     
+        dy = -dy*speed;
+        
+    }
     if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
         dx = -dx;
         }
@@ -63,9 +100,23 @@ function draw() {
         dy = -dy;
         } 
     else if (y + dy > canvas.height - ballRadius) {
-        if (x > (paddleX - ballRadius)  && x < (paddleX + paddleWidth + ballRadius)) {
-              dy = -dy*1.1;
-              dx = dx*1.1;
+        
+        if (x > (paddleX - ballRadius)  && x < (paddleX + paddleWidth + ballRadius)) //ie the food hits the paddle
+         {
+              dy = -dy;
+              if (dx > 0) // food is moving right
+              {dx += Math.sqrt(x - paddleX) / 5}
+
+              else if (dx < 0) // food is moving left
+              {dx -= Math.sqrt((paddleX + paddleWidth) -x) / 5}
+
+              else if (dx == 0 && x < paddleX + paddleWidth/2) //food drops straight down on paddle left
+              {dx -= speed * Math.sqrt((paddleX + paddleWidth) -x) / 5} //food goes left
+
+              
+              else if (dx == 0 && x > paddleX + paddleWidth/2) //food drops straight down on paddle right
+              {dx += speed * Math.sqrt(x - paddleX) / 5 } //food goes right
+              
               
             } 
         else {
@@ -84,5 +135,4 @@ function draw() {
         }
     }  
     
-let speed = 10;
-const interval = setInterval(draw, speed);
+const interval = setInterval(draw, 10);
