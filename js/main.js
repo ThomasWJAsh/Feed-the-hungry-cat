@@ -1,22 +1,75 @@
+function loadImages(sources, callback) {
+    let images = {};
+    let loadedImages = 0;
+    let numImages = 0;
+    // get num of sources
+    for(let src in sources) {
+      numImages++;
+    }
+    for(let src in sources) {
+      images[src] = new Image();
+      images[src].onload = function() {
+        if(++loadedImages >= numImages) {
+          callback(images);
+        }
+      };
+      images[src].src = sources[src];
+    }
+  }
+
+const sources = {
+    turkey_leg: 'assets/poultry-leg.256x256.png', 
+    cat_face: 'assets/cat-face.svg', 
+    happy_cat: 'assets/smiling-cat-face-with-heart-eyes.svg',
+    sad_cat: 'assets/crying-cat-face.svg',
+    christophe: 'assets/very-hungry-cat.jpg'
+}
+
+//preloader function for image files
+
+
+let score = 0;
+let lives = 9;
+let emoji = document.querySelector('#emoji');
+
 const canvas = document.querySelector('#canvas');
 const ctx = canvas.getContext("2d");
 
 const catx = canvas.width / 2;
 const caty = canvas.height / 2;
 const mouthRadius = 50;
-const ballRadius = 10;
+const ballRadius = 20;
+
+ctx.font = "48px sans-serif";
+ctx.textAlign = "center";
+ctx.fillStyle = "#ffffff";
+ctx.fillText('Press Enter to start', catx, caty)
+
+function catFace(face) {
+    if (face === 'happy') {emoji.innerHTML = `<img src= ${sources.happy_cat} />`;}
+
+    else if (face === 'sad') {emoji.innerHTML = `<img src= ${sources.sad_cat} />`;
+
+console.log('sad')}
+
+    setTimeout(
+        ()=>{ 
+            emoji.innerHTML = `<img src= ${sources.cat_face} />`;
+        }, 1000
+        )
+}
+
+
 
 function startPosition() {
 
-    if (Math.floor(Math.random()*10) <=0.5){
+    if (Math.random()<=0.5){
         return Math.floor(Math.random() * (catx - (mouthRadius+ballRadius) - ballRadius*2) + ballRadius*2)
     }
     else { 
         return Math.floor(Math.random() * (canvas.width - ballRadius*2 - (catx+mouthRadius+ballRadius)) + (catx+mouthRadius+ballRadius))
     }
 }
-
-
 
 let x = startPosition();
 let y = ballRadius;
@@ -31,10 +84,12 @@ const paddleWidth = 75;
 let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
+beginGame = false;
 
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
+document.addEventListener("keydown", gameStart, false )
 
 function keyDownHandler(e) {
     if (e.key === "Right" || e.key === "ArrowRight") {
@@ -59,6 +114,13 @@ function drawBall() {
     ctx.fill();
     ctx.closePath();
   }
+
+function drawTurkey(img) {
+
+    ctx.drawImage(img, x, y, ballRadius, ballRadius);
+
+}
+
   
 function drawPaddle() {
     ctx.beginPath();
@@ -68,26 +130,34 @@ function drawPaddle() {
     ctx.closePath();
   }
 
-function drawCatMouth() {
-    ctx.beginPath();
-    ctx.arc(catx, caty, mouthRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "#0095DD";
-    ctx.fill();
-    ctx.closePath();
+function drawCatMouth(img) {
+    ctx.drawImage(img, catx-mouthRadius*4, caty-mouthRadius*4, mouthRadius*8, mouthRadius*8);
   }
+
+
+  function gameStart(e) {
+    if (e.key === "Enter" && beginGame === false) {
+      beginGame = true;
+    
+    
+    loadImages(sources, function(images) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBall();
+    drawCatMouth(images.christophe);
+    drawTurkey(images.turkey_leg);
     drawPaddle();
-    drawCatMouth();
+    
     x += dx;
     y += dy;
     //make the food disappear when it hits the mouth
     if (x > (catx - mouthRadius)  && x < (catx + mouthRadius) && y < (caty + mouthRadius) && y > (caty - mouthRadius)) {
+        score += 1;
+        document.querySelector('#total').innerHTML = score;
+        catFace('happy');
         x = startPosition();
         y = 20; 
-        speed += 0.001;
+        speed += 0.002;
         dx = 0;     
         dy = -dy*speed;
         
@@ -101,7 +171,7 @@ function draw() {
         } 
     else if (y + dy > canvas.height - ballRadius) {
         
-        if (x > (paddleX - ballRadius)  && x < (paddleX + paddleWidth + ballRadius)) //ie the food hits the paddle
+        if (x >= (paddleX - ballRadius)  && x < (paddleX + paddleWidth + ballRadius)) //ie the food hits the paddle
          {
               dy = -dy;
               if (dx > 0) // food is moving right
@@ -118,8 +188,17 @@ function draw() {
               {dx += speed * Math.sqrt(x - paddleX) / 5 } //food goes right
               
               
-            } 
-        else {
+            }
+        else if (lives > 0) {
+            catFace('sad');
+            lives -= 1;
+            document.querySelector('#lives').innerHTML = lives;
+            x = startPosition();
+            y = 20; 
+            dx = 0;     
+            dy = -dy;
+        }
+        else if (lives == 0) {
               alert("GAME OVER");
               document.location.reload();
               clearInterval(interval);
@@ -136,3 +215,7 @@ function draw() {
     }  
     
 const interval = setInterval(draw, 10);
+}
+)
+
+} }
